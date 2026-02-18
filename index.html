@@ -280,7 +280,7 @@
     <div class="card">
       <div class="panel-head">
         <h2 class="panel-title">Compare Common Services</h2>
-        <p class="panel-sub">Tap a row for details and support options</p>
+        <p class="panel-sub">Select a row for details and support options</p>
       </div>
       <div class="tabs" id="tabs" role="tablist"></div>
       <input id="search" aria-label="Search services" placeholder="Search by CPT, DRG, or service name">
@@ -401,8 +401,15 @@
         avgSavings.textContent = "0%";
         return;
       }
-      const total = validRows.reduce((sum, d) => sum + ((1 - (d.t1 / d.t2)) * 100), 0);
-      avgSavings.textContent = `${Math.round(total / validRows.length)}%`;
+      const savingsRows = validRows
+        .map(d => (1 - (d.t1 / d.t2)) * 100)
+        .filter(v => v > 0);
+      if (!savingsRows.length) {
+        avgSavings.textContent = "0%";
+        return;
+      }
+      const total = savingsRows.reduce((sum, v) => sum + v, 0);
+      avgSavings.textContent = `${Math.round(total / savingsRows.length)}%`;
     }
 
     function render() {
@@ -418,7 +425,13 @@
       updateSummary(rows);
 
       if (!rows.length) {
-        body.innerHTML = `<tr class="empty-state"><td colspan="5">No services matched your search. Try a CPT/DRG code or a broader keyword.</td></tr>`;
+        const emptyRow = document.createElement("tr");
+        emptyRow.className = "empty-state";
+        const emptyCell = document.createElement("td");
+        emptyCell.colSpan = 5;
+        emptyCell.textContent = "No services matched your search. Try a CPT/DRG code or a broader keyword.";
+        emptyRow.appendChild(emptyCell);
+        body.appendChild(emptyRow);
         return;
       }
 
