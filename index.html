@@ -247,7 +247,7 @@
   <div class="wrap">
 
     <div class="card">
-      <span class="hero-tag">Butler Benefits • Price Transparency</span>
+      <div class="hero-tag">Butler Benefits • Price Transparency</div>
       <h1>HPHP Price Transparency</h1>
 
       <p>You deserve to know what healthcare costs before you receive it.</p>
@@ -282,7 +282,7 @@
         <h2 class="panel-title">Compare Common Services</h2>
         <p class="panel-sub">Tap a row for details and support options</p>
       </div>
-      <div class="tabs" id="tabs"></div>
+      <div class="tabs" id="tabs" role="tablist"></div>
       <input id="search" aria-label="Search services" placeholder="Search by CPT, DRG, or service name">
 
       <div class="table-wrap">
@@ -363,10 +363,16 @@
       const t = document.createElement("button");
       t.type = "button";
       t.className = "tab" + (c === activeCategory ? " active" : "");
+      t.setAttribute("role", "tab");
+      t.setAttribute("aria-selected", c === activeCategory ? "true" : "false");
       t.textContent = c;
       t.onclick = () => {
-        document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+        document.querySelectorAll(".tab").forEach(x => {
+          x.classList.remove("active");
+          x.setAttribute("aria-selected", "false");
+        });
         t.classList.add("active");
+        t.setAttribute("aria-selected", "true");
         activeCategory = c;
         render();
       };
@@ -390,8 +396,13 @@
         avgSavings.textContent = "0%";
         return;
       }
-      const total = rows.reduce((sum, d) => sum + ((1 - (d.t1 / d.t2)) * 100), 0);
-      avgSavings.textContent = `${Math.round(total / rows.length)}%`;
+      const validRows = rows.filter(d => Number.isFinite(d.t2) && d.t2 > 0);
+      if (!validRows.length) {
+        avgSavings.textContent = "0%";
+        return;
+      }
+      const total = validRows.reduce((sum, d) => sum + ((1 - (d.t1 / d.t2)) * 100), 0);
+      avgSavings.textContent = `${Math.round(total / validRows.length)}%`;
     }
 
     function render() {
