@@ -1,49 +1,327 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Upfront Pricing Calculator</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HPHP Price Transparency</title>
+
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121a3a;
+      --panel: #0e1533;
+
+      --text: #f7f9ff;
+      --sub: #e6ebff;
+      --muted: #cfd6ff;
+
+      --line: rgba(255,255,255,.28);
+      --accent: #7a90ff;
+
+      --good: #3eea93;
+      --warn: #ffe08a;
+      --bad: #ff8a8a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 18px 60px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      color: var(--text);
+    }
+
+    p {
+      margin: 0 0 10px;
+      color: var(--sub);
+      line-height: 1.5;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .tab {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    input::placeholder { color: var(--muted); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      color: var(--text);
+    }
+
+    th {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    tr.service-row:hover {
+      background: rgba(255,255,255,.06);
+      cursor: pointer;
+    }
+
+    .mono {
+      font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .good { color: var(--good); }
+    .warn { color: var(--warn); }
+    .bad  { color: var(--bad); }
+
+    .detail-row td {
+      padding: 0;
+      border-bottom: none;
+    }
+
+    .detail-box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      margin: 12px;
+      padding: 16px;
+      color: var(--text);
+    }
+
+    .detail-box p {
+      color: var(--sub);
+      font-size: 13px;
+      margin: 8px 0 0;
+    }
+  </style>
 </head>
+
 <body>
+  <div class="wrap">
 
-<h1>Upfront Pricing Calculator</h1>
+    <div class="card">
+      <h1>HPHP Price Transparency</h1>
 
-<label>
-    Billed Charge ($):
-    <input type="number" id="billed" />
-</label>
-<br><br>
+      <p>You deserve to know what healthcare costs before you receive it.</p>
 
-<label>
-    Tier One Discount (%):
-    <input type="number" id="tierOne" value="70" />
-</label>
-<br><br>
+      <p>
+        This tool shows <strong>actual HPHP average paid amounts</strong> compared to
+        <strong>average carrier pricing in Texas</strong> for some of the most common
+        procedures and services members use today. Additional services and procedures
+        will be added over time as this tool continues to expand.
+      </p>
 
-<label>
-    Tier Two Discount (%):
-    <input type="number" id="tierTwo" value="30" />
-</label>
-<br><br>
+      <p>
+        If you don’t see the service you’re looking for, the
+        <strong>HPHP Concierge Team can provide pricing comparisons for virtually any procedure</strong>.
+        Just call <strong>806-510-HPHP (4747)</strong>, and we’ll walk through your options with you.
+      </p>
+    </div>
 
-<button onclick="calculate()">Calculate</button>
+    <div class="card">
+      <div class="tabs" id="tabs"></div>
+      <input id="search" placeholder="Search by CPT, DRG, or service name">
 
-<h2>Results</h2>
-<p id="result"></p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:120px;">Code</th>
+            <th>Description</th>
+            <th style="width:170px;">Tier Two Avg</th>
+            <th style="width:190px;">Tier One Avg (HPHP)</th>
+            <th style="width:160px;">Savings</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
 
-<script>
-function calculate() {
-    const billed = Number(document.getElementById("billed").value);
-    const tierOne = Number(document.getElementById("tierOne").value);
-    const tierTwo = Number(document.getElementById("tierTwo").value);
+  </div>
 
-    const tierOneCost = billed * (1 - tierOne / 100);
-    const tierTwoCost = billed * (1 - tierTwo / 100);
+  <script>
+    const concierge = "806-510-HPHP (4747)";
+    let activeCategory = "Labs";
 
-    document.getElementById("result").innerHTML =
-        "Tier One Cost: $" + tierOneCost.toFixed(2) +
-        "<br>Tier Two Cost: $" + tierTwoCost.toFixed(2);
-}
-</script>
+    const data = [
+      /* LABS */
+      { cat: "Labs", type: "CPT", code: "80050", name: "General Health Panel", t1: 41.94, t2: 74 },
+      { cat: "Labs", type: "CPT", code: "80061", name: "Lipid Panel", t1: 16.40, t2: 28 },
+      { cat: "Labs", type: "CPT", code: "82306", name: "Vitamin D", t1: 37.09, t2: 65 },
+      { cat: "Labs", type: "CPT", code: "82670", name: "Estradiol", t1: 28.39, t2: 58 },
+      { cat: "Labs", type: "CPT", code: "84403", name: "Testosterone", t1: 27.21, t2: 55 },
+      { cat: "Labs", type: "CPT", code: "87624", name: "HPV Test", t1: 52.19, t2: 130 },
+      { cat: "Labs", type: "CPT", code: "86235", name: "Autoimmune Antibody Test", t1: 139.02, t2: 310 },
+      { cat: "Labs", type: "CPT", code: "81528", name: "Stool DNA Test", t1: 537.14, t2: 1650 },
+      { cat: "Labs", type: "CPT", code: "81432", name: "Genetic Test Panel", t1: 1030.50, t2: 3200 },
+      { cat: "Labs", type: "CPT", code: "81419", name: "Genetic / Molecular Test", t1: 2676.42, t2: 8500 },
 
+      /* OFFICE VISITS */
+      { cat: "Office Visits", type: "CPT", code: "99213", name: "Office Visit – Level 3", t1: 94.61, t2: 114 },
+      { cat: "Office Visits", type: "CPT", code: "99214", name: "Office Visit – Level 4", t1: 142.33, t2: 146 },
+      { cat: "Office Visits", type: "CPT", code: "99215", name: "Office Visit – Level 5", t1: 206.60, t2: 160 },
+      { cat: "Office Visits", type: "CPT", code: "97110", name: "Physical Therapy – Back Pain (1 Hour)", t1: 68.50, t2: 102 },
+
+      /* IMAGING */
+      { cat: "Imaging", type: "CPT", code: "73721", name: "MRI Knee w/o Contrast", t1: 460.89, t2: 1127 },
+      { cat: "Imaging", type: "CPT", code: "70551", name: "MRI Brain w/o Contrast", t1: 629.13, t2: 1164 },
+      { cat: "Imaging", type: "CPT", code: "71260", name: "CT Chest w/ Contrast", t1: 198.16, t2: 989 },
+      { cat: "Imaging", type: "CPT", code: "74177", name: "CT Abdomen & Pelvis w/ Contrast", t1: 296.99, t2: 1061 },
+      { cat: "Imaging", type: "CPT", code: "72193", name: "CT Pelvis w/ Contrast", t1: 883, t2: 1005 },
+      { cat: "Imaging", type: "CPT", code: "77065", name: "Diag Mammogram – CAD bundle", t1: 181.59, t2: 125.06 },
+
+      /* OUTPATIENT SURGERY */
+      { cat: "Outpatient Surgery", type: "DRG", code: "470", name: "Hip Replacement without MCC", t1: 17800, t2: 27800 },
+      { cat: "Outpatient Surgery", type: "CPT", code: "29881", name: "Knee Arthroscopy with Meniscus Surgery", t1: 5600, t2: 13100 },
+      { cat: "Outpatient Surgery", type: "DRG", code: "354", name: "Laparoscopic Hernia Repair (inguinal)", t1: 5800, t2: 11172 },
+      { cat: "Outpatient Surgery", type: "DRG", code: "342", name: "Appendectomy (laparoscopic)", t1: 7368, t2: 9873 },
+      { cat: "Outpatient Surgery", type: "DRG", code: "512", name: "Shoulder Arthroscopy Rotator Cuff", t1: 11400, t2: 16189 },
+      { cat: "Outpatient Surgery", type: "CPT", code: "42821", name: "Tonsillectomy", t1: 4180, t2: 5680 },
+      { cat: "Outpatient Surgery", type: "DRG", code: "583", name: "Mastectomy (unilateral)", t1: 8791, t2: 26680 },
+      { cat: "Outpatient Surgery", type: "CPT", code: "58571", name: "Hysterectomy (laparoscopic)", t1: 9190, t2: 13586 },
+      { cat: "Outpatient Surgery", type: "DRG", code: "621", name: "Gastric By-Pass Surgery", t1: 13600, t2: 22959 },
+      { cat: "Outpatient Surgery", type: "CPT", code: "45378", name: "Colonoscopy", t1: 995, t2: 868 },
+      { cat: "Outpatient Surgery", type: "CPT", code: "69436", name: "Ear Tubes for Chronic Ear Infection", t1: 1960, t2: 4374 },
+
+      /* MATERNITY SERVICES */
+      { cat: "Maternity Services", type: "DRG", code: "768", name: "Vaginal Delivery with O.R. Procedures", t1: 4144, t2: 13427.85 },
+      { cat: "Maternity Services", type: "DRG", code: "783", name: "C-Section Delivery with CC", t1: 6110, t2: 19538 }
+    ];
+
+    const categories = [...new Set(data.map(d => d.cat))];
+    const tabs = document.getElementById("tabs");
+    const body = document.getElementById("tableBody");
+    const search = document.getElementById("search");
+
+    categories.forEach(c => {
+      const t = document.createElement("div");
+      t.className = "tab" + (c === activeCategory ? " active" : "");
+      t.textContent = c;
+      t.onclick = () => {
+        document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+        t.classList.add("active");
+        activeCategory = c;
+        render();
+      };
+      tabs.appendChild(t);
+    });
+
+    function money(v) {
+      return v.toLocaleString("en-US", { style: "currency", currency: "USD" });
+    }
+
+    function savings(t1, t2) {
+      const pct = (1 - (t1 / t2)) * 100;
+      const abs = Math.round(Math.abs(pct));
+      if (pct < 0) return { txt: `~${abs}% higher`, cls: "bad" };
+      return { txt: `~${abs}% lower`, cls: abs >= 30 ? "good" : "warn" };
+    }
+
+    function render() {
+      body.innerHTML = "";
+      const q = search.value.toLowerCase();
+
+      data
+        .filter(d =>
+          d.cat === activeCategory &&
+          (d.code.includes(q) || d.name.toLowerCase().includes(q))
+        )
+        .forEach(d => {
+          const s = savings(d.t1, d.t2);
+
+          const tr = document.createElement("tr");
+          tr.className = "service-row";
+          tr.innerHTML = `
+            <td class="mono">${d.type} ${d.code}</td>
+            <td>${d.name}</td>
+            <td class="mono">${money(d.t2)}</td>
+            <td class="mono">${money(d.t1)}</td>
+            <td><span class="pill ${s.cls}">${s.txt}</span></td>
+          `;
+
+          tr.onclick = () => {
+            document.querySelectorAll(".detail-row").forEach(r => r.remove());
+
+            const detail = document.createElement("tr");
+            detail.className = "detail-row";
+            detail.innerHTML = `
+              <td colspan="5">
+                <div class="detail-box">
+                  <strong>${d.name}</strong><br>
+                  Tier One (HPHP): <span class="mono">${money(d.t1)}</span><br>
+                  Tier Two Avg: <span class="mono">${money(d.t2)}</span><br>
+                  Savings: <strong>${s.txt}</strong>
+                  <p>
+                    Prices shown are averages. Actual costs may vary by provider,
+                    location, and clinical complexity. For help planning care,
+                    contact the HPHP Concierge Team at <strong>${concierge}</strong>.
+                  </p>
+                </div>
+              </td>
+            `;
+            tr.after(detail);
+          };
+
+          body.appendChild(tr);
+        });
+    }
+
+    search.addEventListener("input", render);
+    render();
+  </script>
 </body>
 </html>
