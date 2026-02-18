@@ -1,10 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Upfront Pricing</title>
+    <title>Upfront Pricing Calculator</title>
 </head>
 <body>
-    <h1>Upfront Pricing Calculator</h1>
-    <p>This is my first GitHub project.</p>
+
+<h1>Upfront Pricing Calculator</h1>
+
+<label>
+    Billed Charge ($):
+    <input type="number" id="billed" />
+</label>
+<br><br>
+
+<label>
+    Tier One Discount (%):
+    <input type="number" id="tierOne" value="70" />
+</label>
+<br><br>
+
+<label>
+    Tier Two Discount (%):
+    <input type="number" id="tierTwo" value="30" />
+</label>
+<br><br>
+
+<button onclick="calculate()">Calculate</button>
+
+<h2>Results</h2>
+<p id="result"></p>
+
+<script>
+function calculate() {
+    const billed = Number(document.getElementById("billed").value);
+    const tierOne = Number(document.getElementById("tierOne").value);
+    const tierTwo = Number(document.getElementById("tierTwo").value);
+
+    const tierOneCost = billed * (1 - tierOne / 100);
+    const tierTwoCost = billed * (1 - tierTwo / 100);
+
+    document.getElementById("result").innerHTML =
+        "Tier One Cost: $" + tierOneCost.toFixed(2) +
+        "<br>Tier Two Cost: $" + tierTwoCost.toFixed(2);
+}
+</script>
+
 </body>
 </html>
